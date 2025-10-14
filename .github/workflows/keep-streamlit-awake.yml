@@ -1,0 +1,23 @@
+name: keep-streamlit-awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # ejecuta cada 10 minutos
+  workflow_dispatch: {}       # permite ejecutarlo manualmente si querés
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wake up Streamlit app (1)
+        run: |
+          curl -L --max-time 60 --retry 2 --retry-delay 5 \
+            "https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app/?t=$(date +%s)" || true
+      - name: Short wait
+        run: sleep 15
+      - name: Wake up Streamlit app (2)
+        run: |
+          curl -L --max-time 60 --retry 2 --retry-delay 5 \
+            "https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app/?t=$(date +%s)" || true
+
