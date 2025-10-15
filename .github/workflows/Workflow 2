@@ -1,0 +1,23 @@
+name: keep-streamlit-awake-b
+on:
+  schedule:
+    - cron: "2-59/5 * * * *"
+  workflow_dispatch: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping Streamlit (3 intentos rápidos)
+        run: |
+          URL="https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app/"
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36"
+          for i in 1 2 3; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" \
+              -L --connect-timeout 15 --max-time 45 \
+              --retry 4 --retry-delay 5 --retry-all-errors \
+              -H "User-Agent: $UA" -H "Cache-Control: no-cache" \
+              "${URL}?t=$(date +%s)")
+            echo "HTTP $code"
+            sleep 10
+          done
