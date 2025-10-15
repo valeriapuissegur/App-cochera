@@ -2,22 +2,39 @@ name: keep-streamlit-awake
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # ejecuta cada 10 minutos
-  workflow_dispatch: {}       # permite ejecutarlo manualmente si querés
+    - cron: "*/10 * * * *"   # corre cada 10 min (UTC)
+  workflow_dispatch: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
+    concurrency:
+      group: streamlit-keepalive
+      cancel-in-progress: true
     steps:
-      - name: Wake up Streamlit app (1)
+      - name: Ping Streamlit (multi-intentos)
         run: |
-          curl -L --max-time 60 --retry 2 --retry-delay 5 \
-            "https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app/?t=$(date +%s)" || true
-      - name: Short wait
-        run: sleep 15
-      - name: Wake up Streamlit app (2)
-        run: |
-          curl -L --max-time 60 --retry 2 --retry-delay 5 \
-            "https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app/?t=$(date +%s)" || true
+          URL="https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app/"
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0 Safari/537.36"
 
+          ping_once () {
+            curl -L --silent --show-error --fail \
+              --connect-timeout 20 --max-time 60 \
+              --retry 5 --retry-delay 5 --retry-max-time 90 --retry-all-errors \
+              -H "User-Agent: $UA" -H "Cache-Control: no-cache" \
+              "${URL}?t=$(date +%s)" || true
+          }
+
+          # 6 pings espaciados ~20s para cubrir reinicios/colas frías
+          ping_once
+          sleep 20
+          ping_once
+          sleep 20
+          ping_once
+          sleep 20
+          ping_once
+          sleep 20
+          ping_once
+          sleep 20
+          ping_once
