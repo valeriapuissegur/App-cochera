@@ -2,23 +2,28 @@ name: keep-streamlit-awake
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/5 * * * *"   # corre cada 5 min (UTC)
   workflow_dispatch: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 3
     steps:
-      - name: Ping Streamlit (rápido y redundante)
+      - name: Ping Streamlit (3 intentos rápidos)
         run: |
-          URL="https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app/"
+          URL="https://app-cochera-vcnrwbnqeobiojf2tggwxc.streamlit.app"
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36"
+
+          success=0
           for i in 1 2 3; do
-            curl -L --silent --show-error --fail \
+            code=$(curl -sS -o /dev/null -w "%{http_code}" \
               --connect-timeout 15 --max-time 45 \
-              --retry 4 --retry-delay 5 --retry-max-time 60 --retry-all-errors \
               -H "User-Agent: $UA" -H "Cache-Control: no-cache" \
-              "${URL}?t=$(date +%s)" || true
+              "${URL}?t=$(date +%s)")
+            echo "Intento $i → HTTP $code"
+            if [ "${code:0:1}" = "2" ] || [ "${code:0:1}" = "3" ]; then success=1; fi
             sleep 10
           done
+
+          if [ $success -eq 0 ]; then echo "Sin 2xx/3xx, pero continuamos."; fi
