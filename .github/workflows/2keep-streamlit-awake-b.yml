@@ -8,15 +8,17 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Instalar Playwright
+      # Instala Playwright LOCAL al workspace (no global)
+      - name: Instalar Playwright (local)
         run: |
-          npm i -g playwright
+          npm init -y --silent
+          npm i playwright@latest --no-fund --no-audit --silent
           npx playwright install --with-deps chromium
 
       - name: Browser ping (despierta Streamlit)
@@ -30,11 +32,8 @@ jobs:
             const p = await b.newPage({
               userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36'
             });
-            // Carga como un usuario real, evita loops de redirección
             await p.goto(process.env.URL + '?keepalive=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 45000 });
-            // Espera breve para garantizar inicio del script
             await p.waitForTimeout(3000);
             await b.close();
           })();
           JS
-
